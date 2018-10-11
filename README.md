@@ -1,4 +1,4 @@
-# curtain
+# binsequencer
 BinSequencer is a script designed to find a common pattern of bytes within a set of samples and generate a YARA rule from the identified pattern.
 
 Blog post - [06JUN2018 - BinSequencer: Sequencing files for YARA Hunting](http://ropgadget.com/posts/intro_binsequencer.html)
