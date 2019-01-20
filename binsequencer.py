@@ -21,8 +21,8 @@ except:
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.4"
-__date__    = "30NOV2017"
+__version__ = "1.0.5"
+__date__    = "21JAN2019"
 
 #
 # The data structure used throughout this program is below:
@@ -587,7 +587,8 @@ def check_pe(data, match, args, match_section, set_match):
                         for op in md.disasm(code_section, int(hex(virt_addr), 16) + 0x10000000):
 
                             # Due to a Capstone bug, sometimes object won't have '_detail' which causes an infinite recursive loop and crash
-                            if hasattr(op, "_detail"):
+                            #if hasattr(op, "_detail"):
+                            if hasattr(op, "bytes"):
 
                                 # Start of match
                                 if op.address == int(match_start, 16) or scrape_flag == 1:
@@ -919,7 +920,8 @@ def yara_disa(data, args, hashes, code_section, virt_addr, rule):
     for op in md.disasm(code_section, int(hex(virt_addr), 16) + 0x10000000):
 
         # Due to a Capstone bug, sometimes object won't have '_detail' which causes an infinite recursive loop and crash
-        if hasattr(op, "_detail"):
+        #if hasattr(op, "_detail"):
+        if hasattr(op, "bytes"):
 
             # Start of match
             if op.address == int(data["yara"][rule]["start"], 16) or scrape_flag == 1:
