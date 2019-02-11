@@ -21,8 +21,8 @@ except:
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.5"
-__date__    = "21JAN2019"
+__version__ = "1.0.6"
+__date__    = "11FEB2019"
 
 #
 # The data structure used throughout this program is below:
@@ -129,7 +129,8 @@ def process_pe(hash, data, args):
                 data[hash]["op_chain"][section_value].append("%s" % op.mnemonic)
 
                 if args.verbose == True:
-                    if hasattr(op, "_detail"):
+                    #if hasattr(op, "_detail"):
+                    if hasattr(op, "bytes"):
                         print_asst("debug %x | %-15s | %-15s | %2d | %-10s | %-15s | %-12s | %s" % (op.address, op.prefix, op.opcode, len(op.operands), op.mnemonic, op.op_str, "".join('{:02x}'.format(x) for x in op.bytes), "1"), args)
 
                 instruction_count += 1
@@ -170,13 +171,15 @@ def process_nonpe(hash, data, args):
     virt_addr = 0x0
     for op in md.disasm(code_section, int(hex(virt_addr), 16) + 0x10000000 + int(hex(0), 16)):
 
-        if hasattr(op, "_detail"):
+        # if hasattr(op, "_detail"):
+        if hasattr(op, "bytes"):
             op_blob += "%s|" % op.mnemonic
             data[hash]["op_offset"]["section0"].append("0x%x:\t%s |%s" % (op.address, op.mnemonic, "".join('{:02x}'.format(x) for x in op.bytes)))
             data[hash]["op_chain"]["section0"].append("%s" % op.mnemonic)
 
         if args.verbose == True:
-            if hasattr(op, "_detail"):
+            #if hasattr(op, "_detail"):
+            if hasattr(op, "bytes"):
                 print_asst("debug %x | %-15s | %-15s | %2d | %-10s | %-15s | %-12s | %s" % (op.address, op.prefix, op.opcode, len(op.operands), op.mnemonic, op.op_str,  "".join('{:02x}'.format(x) for x in op.bytes), "1"), args)
 
         instruction_count += 1
@@ -252,7 +255,7 @@ def find_gold(hashes, data, args):
     # If gold specified via argument, use it
     if args.gold:
         for hash in hashes:
-            if args.gold in hash:
+            if args.gold.replace("'","") in hash:
                 data["gold"] = hash
     else:
         data["gold"] = gold_hash
@@ -686,7 +689,8 @@ def check_nonpe(data, match, args, match_section, set_match):
                 for op in md.disasm(code_section, int(hex(virt_addr), 16) + 0x10000000):
 
                     # Due to a Capstone bug, sometimes object won't have '_detail' which causes an infinite recursive loop and crash
-                    if hasattr(op, "_detail"):
+                    #if hasattr(op, "_detail"):
+                    if hasattr(op, "bytes"):
 
                         # Start of match
                         if op.address == (match_start + 0x10000000) or scrape_flag == 1:
