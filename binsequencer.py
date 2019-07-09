@@ -21,8 +21,8 @@ except:
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.6"
-__date__    = "11FEB2019"
+__version__ = "1.0.7"
+__date__    = "09JUL2019"
 
 #
 # The data structure used throughout this program is below:
@@ -1102,34 +1102,49 @@ def yara_disa(data, args, hashes, code_section, virt_addr, rule):
                     # Best-guess YARA rule on failure or by choice
                     if user_answer != "Y" or yara_string.startswith("FAIL"):
 
-                        yara_string = " ".join(yara_list)
-                        yara_string = yara_string.replace("(E8|FF) ", "(E8|FF) [0-12] ")
-                        yara_string = yara_string.replace("(E9|EB) ", "(E9|EB) [0-12] ")
-                        yara_string = yara_string.replace("(C2|C3) ", "(C2|C3) [0-12] ")
-                        yara_string = yara_string.replace("(8?|A?|C?) ", "(8?|A?|C?) [0-12] ")
-                        yara_string = yara_string.replace("(5?|6A|FF) ", "(5?|6A|FF) [0-12] ")
-                        yara_string = yara_string.replace("(5?|07|17|1F|8F) ", "(5?|07|17|1F|8F) [0-12] ")
-                        yara_string = yara_string.replace("(4?|FE|FF) ", "(4?|FE|FF) [0-12] ")
-                        yara_string = yara_string.replace("(3?|8?) ", "(3?|8?) [0-12] ")
-                        yara_string = yara_string.replace("(8?|A?|F?)", "(8?|A?|F?) [0-12]")
+                        complex = False
+                        count = 0
 
-                        # Compile YARA rule
-                        yara_rule = "rule test\n{\nstrings:\n$hex_string = { %s }\ncondition:\n$hex_string\n}" % yara_string
-                        rules = yara.compile(source=yara_rule)
+                        # This loop is intended to handle compilation issues within YARA - usually complexity related
+                        while complex != True:
 
-                        # Check matches
-                        match_count = 0
-                        for hash in data["yara"][rule]["hashes"]:
-                            if "[test]" in str(rules.match(hash)):
-                                match_count += 1
+                            try:
+
+                                yara_string = " ".join(yara_list[:len(yara_list) - count])
+                                yara_string = yara_string.replace("(E8|FF) ", "(E8|FF) [0-12] ")
+                                yara_string = yara_string.replace("(E9|EB) ", "(E9|EB) [0-12] ")
+                                yara_string = yara_string.replace("(C2|C3) ", "(C2|C3) [0-12] ")
+                                yara_string = yara_string.replace("(8?|A?|C?) ", "(8?|A?|C?) [0-12] ")
+                                yara_string = yara_string.replace("(5?|6A|FF) ", "(5?|6A|FF) [0-12] ")
+                                yara_string = yara_string.replace("(5?|07|17|1F|8F) ", "(5?|07|17|1F|8F) [0-12] ")
+                                yara_string = yara_string.replace("(4?|FE|FF) ", "(4?|FE|FF) [0-12] ")
+                                yara_string = yara_string.replace("(3?|8?) ", "(3?|8?) [0-12] ")
+                                yara_string = yara_string.replace("(8?|A?|F?)", "(8?|A?|F?) [0-12]")
+
+                                # Compile YARA rule
+                                yara_rule = "rule test\n{\nstrings:\n$hex_string = { %s }\ncondition:\n$hex_string\n}" % yara_string
+                                rules = yara.compile(source=yara_rule)
+
+                                # Check matches
+                                match_count = 0
+                                for hash in data["yara"][rule]["hashes"]:
+                                    if "[test]" in str(rules.match(hash)):
+                                        match_count += 1
+
+                                if (float(match_count) / float(len(hashes))) < args.commonality:
+                                    count += 1
+                                else:
+                                    complex = True
+                                    if count >= 1:
+                                        print_asst("\n\t[!] Error compiling YARA rule (complexity), recovered by removing %s characters" % count, args)
+
+                            except:
+                                count += 1
 
                         # For 100% matches, add message
                         if (float(match_count) / float(len(hashes))) >= args.commonality:
-
                             data["yara"][rule]["msg"].append("Match SUCCESS for generic")
-
                         else:
-
                             data["yara"][rule]["msg"].append("Match FAILED for generic")
 
                     data["yara"][rule]["result"] = yara_string
@@ -1204,12 +1219,18 @@ def gen_yara(hash, data, hashes, args):
 
 def yara_count(yara_string, data, rule):
 
-    if yara_string.startswith("FAIL"):
+    if type(yara_string) == list:
+        yara_string = "".join(yara_string)
 
+    if yara_string.startswith("FAIL"):
         return 0
 
     yara_rule = "rule test\n{\nstrings:\n$hex_string = { %s }\ncondition:\n$hex_string\n}" % yara_string
-    rules = yara.compile(source=yara_rule)
+
+    try:
+        rules = yara.compile(source=yara_rule)
+    except:
+        return -1 # ERROR - try to recover by morphing rule (too complex regex usually)
 
     # Check matches
     match_count = 0
