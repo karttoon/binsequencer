@@ -1,28 +1,28 @@
-#!/usr/bin/env python
-import sys, argparse, time, os, re
+#!/usr/bin/env python3
+import sys, argparse, time, os, re, binascii
 
 try:
     import yara
 except:
-    print "\n   [!] Please install the Python 'yara' module"
+    print("\n   [!] Please install the Python 'yara' module")
     sys.exit(1)
 
 try:
     import pefile
 except:
-    print "\n    [!] Please install the Python 'pefile' module"
+    print("\n    [!] Please install the Python 'pefile' module")
     sys.exit(1)
 
 try:
     from capstone import *
 except:
-    print "\n    [!] Please install the Python 'capstone' module"
+    print("\n    [!] Please install the Python 'capstone' module")
     sys.exit(1)
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.7"
-__date__    = "09JUL2019"
+__version__ = "1.0.8"
+__date__    = "05SEP2019"
 
 #
 # The data structure used throughout this program is below:
@@ -68,7 +68,7 @@ __date__    = "09JUL2019"
 ################
 def user_prompt(usr_msg):
 
-    user_response = (raw_input(usr_msg)).upper()
+    user_response = (input(usr_msg)).upper()
 
     if user_response == "Y":
         return "Y"
@@ -78,7 +78,7 @@ def user_prompt(usr_msg):
 def print_asst(msg, args):
 
     if not args.quiet:
-        print msg
+        print(msg)
 
     return
 
@@ -98,7 +98,7 @@ def process_pe(hash, data, args):
         if section.IMAGE_SCN_CNT_CODE == True or section.IMAGE_SCN_MEM_EXECUTE == True: # Only work on code sections
 
             section_start   = 0
-            zero_check      = (pe.sections[count].get_data()[0:2]).encode("hex")
+            zero_check      = binascii.hexlify(pe.sections[count].get_data()[0:2]).decode("ascii")
 
             # This loop will move the start forward until it no longer begins with null bytes
             # Idea is to try and get to valid bytes in the code section for disassembly without using EP
@@ -108,7 +108,7 @@ def process_pe(hash, data, args):
                     print_asst("debug zc %s" % zero_check, args)
 
                 section_start   += 4
-                zero_check      = (pe.sections[count].get_data()[section_start:section_start + 2]).encode("hex")
+                zero_check      = binascii.hexlify(pe.sections[count].get_data()[section_start:section_start + 2]).decode("ascii")
 
             if args.verbose == True:
                 print_asst("debug section start %s" % section_start, args)
@@ -129,16 +129,15 @@ def process_pe(hash, data, args):
                 data[hash]["op_chain"][section_value].append("%s" % op.mnemonic)
 
                 if args.verbose == True:
-                    #if hasattr(op, "_detail"):
                     if hasattr(op, "bytes"):
                         print_asst("debug %x | %-15s | %-15s | %2d | %-10s | %-15s | %-12s | %s" % (op.address, op.prefix, op.opcode, len(op.operands), op.mnemonic, op.op_str, "".join('{:02x}'.format(x) for x in op.bytes), "1"), args)
 
                 instruction_count += 1
 
             data[hash]["op_blob"][section_value]        = op_blob
-            data[hash]["section_name"][section_value]   = section.Name
+            data[hash]["section_name"][section_value]   = section.Name.decode("ascii")
 
-            print_asst("\t\t%s - %d instructions extracted" % (section.Name, instruction_count), args)
+            print_asst("\t\t%s - %d instructions extracted" % (section.Name.decode("ascii"), instruction_count), args)
 
         count += 1 # Count for each section processed
 
@@ -178,7 +177,6 @@ def process_nonpe(hash, data, args):
             data[hash]["op_chain"]["section0"].append("%s" % op.mnemonic)
 
         if args.verbose == True:
-            #if hasattr(op, "_detail"):
             if hasattr(op, "bytes"):
                 print_asst("debug %x | %-15s | %-15s | %2d | %-10s | %-15s | %-12s | %s" % (op.address, op.prefix, op.opcode, len(op.operands), op.mnemonic, op.op_str,  "".join('{:02x}'.format(x) for x in op.bytes), "1"), args)
 
@@ -294,7 +292,7 @@ def longest_match(hashes, data, args):
             print_asst("\t[-] No instructions in this section", args)
 
         max_size        = blob_size
-        delta_value     = blob_size / 2
+        delta_value     = int(blob_size / 2)
         closing_flag    = 0
 
         while blob_size > 0:
@@ -335,8 +333,8 @@ def longest_match(hashes, data, args):
                 if len(data["matches"]) == 0 or len(data["keeplist"]) < args.matches:
 
                     closing_flag    = 0
-                    blob_size       = blob_size / 2
-                    delta_value     = blob_size / 2
+                    blob_size       = int(blob_size / 2)
+                    delta_value     = int(blob_size / 2)
                     data["matches"] = {}
 
                     print_asst("", args) # Spacing
@@ -353,13 +351,13 @@ def longest_match(hashes, data, args):
             if len(data["matches"]) == 0 and delta_value != 0:
 
                 blob_size   = blob_size - delta_value
-                delta_value = delta_value / 2
+                delta_value = int(delta_value / 2)
 
             # Grows blob size by adding half of the delta to existing size
             if len(data["matches"]) >= 1 and delta_value != 0:
 
                 blob_size       = blob_size + delta_value
-                delta_value     = delta_value / 2
+                delta_value     = int(delta_value / 2)
                 data["matches"] = {}
 
             # If previous run had a match and set the closing flag, this will trigger once there are no more matches
@@ -395,8 +393,8 @@ def longest_match(hashes, data, args):
                 if len(data["matches"]) == 0:
 
                     closing_flag    = 0
-                    blob_size       = blob_size / 2
-                    delta_value     = blob_size / 2
+                    blob_size       = int(blob_size / 2)
+                    delta_value     = int(blob_size / 2)
                     data["matches"] = {}
 
                     print_asst("", args) # Spacing
@@ -441,8 +439,8 @@ def longest_match(hashes, data, args):
 def find_match(hashes, data, opset_size, section_value, args):
 
     slider_start    = 0
-    slider_end      = opset_size + slider_start
-    slider_length   = opset_size
+    slider_end      = int(opset_size + slider_start)
+    slider_length   = int(opset_size)
 
     while slider_length == opset_size: # breaks once we go outside of possible range
 
@@ -550,9 +548,9 @@ def check_pe(data, match, args, match_section, set_match):
 
     for pe_section in pe.sections:
 
-        if data["matches"] > 0 and match not in data["blacklist"]:
+        if len(data["matches"]) > 0 and match not in data["blacklist"]:
 
-            if pe_section.Name == data[data["gold"]]["section_name"][match_section]:
+            if pe_section.Name.decode("ascii") == data[data["gold"]]["section_name"][match_section]:
 
                 # For multiple sections, make sure we don't keep prompting
                 if args.default:
@@ -872,17 +870,17 @@ def find_string(data, args):
     data["strings"] = []
     check_strings   = []
 
-    file = open(data["gold"], "r").read().strip()
+    file = open(data["gold"], "rb").read().strip()
 
     # ASCII
-    for string in re.finditer("[ -~]{%d,}" % 4, file):
+    for string in re.finditer(rb"[ -~]{%d,}" % 4, file):
 
         if string.group(0) not in check_strings:
 
             check_strings.append(string.group(0))
 
     # UNICODE
-    for string in re.finditer("(([ -~]\x00){%d,})" % 4, file):
+    for string in re.finditer(rb"(([ -~]\x00){%d,})" % 4, file):
 
         if string not in check_strings:
 
@@ -905,7 +903,7 @@ def string_count(string, data, rule):
 
     match_count = 0
     for hash in data["yara"][rule]["hashes"]:
-        if re.search(re.escape(string), open(hash, "r").read()):
+        if re.search(re.escape(string), open(hash, "rb").read()):
             match_count += 1
 
     return match_count
@@ -932,7 +930,7 @@ def yara_disa(data, args, hashes, code_section, virt_addr, rule):
 
                 keep_bytes = ((4 - (op.prefix).count(0)) + (4 - (op.opcode).count(0))) * 2
                 byte_array = "".join('{:02x}'.format(x) for x in op.bytes)
-                byte_length = len(byte_array) / 2
+                byte_length = int(len(byte_array) / 2)
                 byte_list.append(byte_array)
 
                 # These are opcode variatons that we want to try and account for
@@ -1156,7 +1154,7 @@ def yara_disa(data, args, hashes, code_section, virt_addr, rule):
         else:
             if scrape_flag == 1:
                 byte_array = "".join('{:02x}'.format(x) for x in op.bytes)
-                byte_length = len(byte_array) / 2
+                byte_length = int(len(byte_array) / 2)
                 yara_string = ("?? " * byte_length).strip()
                 hex_count += 8
                 byte_list.append(byte_array)
@@ -1343,7 +1341,7 @@ def yara_straight(data, hashes, rule, yara_set, args):
 
 def yara_morph(yara_set, args, data, rule, hashes):
 
-    yara_set = filter(None, yara_set)
+    yara_set = [item for item in yara_set if item]
 
     count = len(yara_set)
     flag  = 0
@@ -1726,19 +1724,19 @@ def print_yara(data, args):
 
     for rule in data["yara"]:
 
-        print "\n/*"
+        print("\n/*")
 
         if comment_flag == 1:
-            print """\nSAMPLES:
+            print("""\nSAMPLES:
 
-%s""" % "\n".join(data["yara"][rule]["hashes"])
+%s""" % "\n".join(data["yara"][rule]["hashes"]))
 
         if byte_flag == 1:
-            print """\nBYTES:
+            print("""\nBYTES:
 
-%s""" % data["yara"][rule]["bytes"].upper()
+%s""" % data["yara"][rule]["bytes"].upper())
 
-        print """
+        print("""
 INFO:
 
 %s
@@ -1762,21 +1760,21 @@ rule %s
         data["gold"],
         time.strftime("%Y-%m-%d"),
         rule,
-        data["yara"][rule]["result"].replace(" ","").upper())
+        data["yara"][rule]["result"].replace(" ","").upper()))
 
         if args.strings:
 
             for count, string in enumerate(data["strings"]):
 
-                print "%s$string_%s = { %s } // %s" % (" " * 12,
+                print("%s$string_%s = { %s } // %s" % (" " * 12,
                                                         count,
                                                         "".join([hex(ord(x))[2:] for x in string]).upper(),
-                                                        string)
-            print ""
+                                                        string))
+            print("")
 
-        print """%scondition:
+        print("""%scondition:
             all of them
-}\n""" % (" " * 8)
+}\n""" % (" " * 8))
 
     return
 

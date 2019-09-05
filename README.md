@@ -273,6 +273,9 @@ rule rule0
 
 ### [+] CHANGE LOG [+]
 
+v1.0.8 - 05SEP2019
+* Converted script to Python3.
+
 v1.0.7 - 09JUL2019
 * Added some handling for YARA compilation issues - should remove bits of the rule till match occurs again
 
