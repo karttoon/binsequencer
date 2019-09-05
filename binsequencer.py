@@ -155,7 +155,7 @@ def process_pe(hash, data, args):
 
 def process_nonpe(hash, data, args):
 
-    file_data = open(hash, "r").read().strip() # Remove newline - usually an issue with copy/paste shellcode
+    file_data = open(hash, "rb").read().strip() # Remove newline - usually an issue with copy/paste shellcode
     data[hash] = {"op_blob": {}, "op_offset": {}, "op_chain": {}, "section_name": {}}  # Initialize each hash dictionary
 
     print_asst("\t[-]" + hash, args)
@@ -648,7 +648,7 @@ def check_nonpe(data, match, args, match_section, set_match):
     display_flag = 0
     keep_flag    = 0
 
-    if data["matches"] > 0 and match not in data["blacklist"]:
+    if len(data["matches"]) > 0 and match not in data["blacklist"]:
 
         # For multiple sections, make sure we don't keep prompting
         if args.default:
@@ -681,7 +681,7 @@ def check_nonpe(data, match, args, match_section, set_match):
 
                 print_asst("", args)  # Spacing
 
-                code_section = open(data["gold"]).read()[match_start:match_end + 1] # Remove newline typical in shellcode copy/paste files
+                code_section = open(data["gold"], "rb").read()[match_start:match_end + 1] # Remove newline typical in shellcode copy/paste files
                 virt_addr = 0x0
 
                 for op in md.disasm(code_section, int(hex(virt_addr), 16) + 0x10000000):
@@ -1189,7 +1189,7 @@ def gen_nonpeyara(data, hash, args, hashes):
 
         data["yara"][rule]["msg"] = []
 
-        code_section = open(data["gold"]).read().strip() # Remove newline typical in shellcode copy/paste files
+        code_section = open(data["gold"], "rb").read().strip() # Remove newline typical in shellcode copy/paste files
         virt_addr = 0x0
 
         data = yara_disa(data, args, hashes, code_section, virt_addr, rule)
