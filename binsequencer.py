@@ -21,8 +21,8 @@ except:
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.8"
-__date__    = "05SEP2019"
+__version__ = "1.0.9"
+__date__    = "19DEC2019"
 
 #
 # The data structure used throughout this program is below:
@@ -1818,7 +1818,10 @@ def main():
         md = Cs(CS_ARCH_X86, CS_MODE_32)  # x86
     elif args.arch == "x64":
         md = Cs(CS_ARCH_X86, CS_MODE_64)  # x64
-    md.skipdata = True  # Skip data
+    if args.nonpe:
+        md.skipdata = False
+    else:
+        md.skipdata = True  # Skip data
     md.detail = True  # Show details
 
     print_asst("\n[+] Extracting instructions and generating sets\n", args)

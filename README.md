@@ -273,6 +273,9 @@ rule rule0
 
 ### [+] CHANGE LOG [+]
 
+v1.0.9 - 19DEC2019
+* Non-PE files will now disable SKIPDATA in Capstone when run to prevent disassembly issues 
+
 v1.0.8 - 05SEP2019
 * Converted script to Python3.
 
