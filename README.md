@@ -273,6 +273,9 @@ rule rule0
 
 ### [+] CHANGE LOG [+]
 
+v1.1.0 - 13MAY2020
+* Added prefix try/catch when iterating over sections with bytes that don't map to x86
+
 v1.0.9 - 19DEC2019
 * Non-PE files will now disable SKIPDATA in Capstone when run to prevent disassembly issues 
 

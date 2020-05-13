@@ -21,8 +21,8 @@ except:
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "karttoon@gmail.com"
-__version__ = "1.0.9"
-__date__    = "19DEC2019"
+__version__ = "1.1.0"
+__date__    = "13MAY2020"
 
 #
 # The data structure used throughout this program is below:
@@ -928,10 +928,14 @@ def yara_disa(data, args, hashes, code_section, virt_addr, rule):
             # Start of match
             if op.address == int(data["yara"][rule]["start"], 16) or scrape_flag == 1:
 
-                keep_bytes = ((4 - (op.prefix).count(0)) + (4 - (op.opcode).count(0))) * 2
                 byte_array = "".join('{:02x}'.format(x) for x in op.bytes)
                 byte_length = int(len(byte_array) / 2)
                 byte_list.append(byte_array)
+
+                try:
+                    keep_bytes = ((4 - (op.prefix).count(0)) + (4 - (op.opcode).count(0))) * 2
+                except:
+                    keep_bytes = byte_length
 
                 # These are opcode variatons that we want to try and account for
                 # A lot of time there will be varying lengths due to operands as well
